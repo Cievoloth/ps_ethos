@@ -101,6 +101,10 @@ var app = new Vue({
     page: 1,
     maxPage: 1,
     validate: false,
+    httpMethods: [{
+      text: ' - Select - ',
+      value: ''
+    }, 'GET', 'POST', 'PUT', 'DELETE'],
     newEndPoint: {
       name: '',
       type: '',

@@ -53,10 +53,19 @@ class ConnectorController extends Controller
 
     public function generate(){
         $data = EnvironmentVariable::where("name", "Ethos_Key")->first();
-        $ethosKey = $data->getValueAttribute();
+        if($data->getOriginal('value') == ""){
+            $ethosKey = "";
+        }else{
+            $ethosKey = $data->getValueAttribute();
+        }
 
         $data = EnvironmentVariable::where("name", "Ethos_Base_Uri")->first();
-        $ethosBaseUri = $data->getValueAttribute();
+
+        if($data->getOriginal('value') == ""){
+            $ethosBaseUri = "";
+        }else{
+            $ethosBaseUri = $data->getValueAttribute();
+        }        
 
         if($ethosKey != "" && $ethosBaseUri != ""){
             $client = new Client([

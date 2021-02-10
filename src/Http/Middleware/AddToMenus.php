@@ -22,7 +22,7 @@ class AddToMenus
         // Add our menu item to the top nav
         $menu->add(__('Ethos'), [
             'route' => 'package.ethos.index',
-            'icon' => 'fa-puzzle-piece',
+            'icon' => 'fa-ethernet',
         ]);
         return $next($request);
     }

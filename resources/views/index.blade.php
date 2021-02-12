@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{mix('/css/package.css', 'vendor/processmaker/packages/ps_ethos')}}">
 @endsection
 @section('content')
-    <div class="container page-content" id="app-ps_ethos">
+    <div class="container page-content" id="app-ps_ethos" v-cloak>
         <p class="lead">
         <div class="row">
             <div class="col-12">
@@ -50,7 +50,7 @@
                                 <td>@{{ endPoint["description"] }}</td>
                                 <td>
                                     <b-button-group size="sm">
-                                        <b-button class="btn btn-info" @click="deleteRow(endPoint['id'])"><span class="fas fa-edit"></span> Edit</b-button>
+                                        <b-button class="btn btn-info" @click="openModal(endPoint['id'])"><span class="fas fa-edit"></span> Edit</b-button>
                                         <b-button class="btn btn-danger" @click="deleteRow(endPoint['id'])"><span class="fas fa-trash"></span> Remove</b-button>
                                     </b-button-group>
                                 </td>
@@ -60,14 +60,14 @@
                     <template #footer>
                         <div class="row">
                             <div class="col-md-6 col-sm-12 d-flex align-items-start flex-column">
-                                <b-button class="btn btn-info" size="sm"><span class="fas fa-sync-alt"></span> Regenerate</b-button>
+                                <b-button class="btn btn-info" @click="refreshEndpoints()" size="sm"><span class="fas fa-sync-alt"></span> Regenerate</b-button>
                             </div>
                             <div class="col-md-6 col-sm-12 d-flex align-items-end flex-column button-pagination">
                                 <nav aria-label="Page navigation">
                                     <ul class="pagination">
                                         <li class="page-item" @click="setPage(1)"><a class="page-link" href="#"><i class="fas fa-angle-double-left"></i></a></li>
                                         <li class="page-item" @click="subtractPage()"><a class="page-link" href="#"><i class="fas fa-angle-left"></i></a></li>
-                                        
+
                                         <li class="page-item" v-bind:class="{'active': page == 1}" @click="setPage(1)">
                                             <a class="page-link">1</a>
                                         </li>
@@ -89,12 +89,12 @@
                                         <li class="page-item" v-if="maxPage > 1" v-bind:class="{'active': page == maxPage}" @click="setPage(maxPage)">
                                             <a class="page-link">@{{ maxPage }}</a>
                                         </li>
-                                        
+
                                         <li class="page-item" @click="addPage()"><a class="page-link" href="#"><i class="fas fa-angle-right"></i></a></li>
                                         <li class="page-item" @click="setPage(maxPage)"><a class="page-link" href="#"><i class="fas fa-angle-double-right"></i></a></li>
                                     </ul>
                                 </nav>
-                            </div>    
+                            </div>
                         </div>
                     </template>
                 </b-card>

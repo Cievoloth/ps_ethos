@@ -110,7 +110,8 @@ var app = new Vue({
       type: '',
       api: '',
       description: ''
-    }
+    },
+    currentEndPointId: ''
   },
   methods: {
     reload: function reload() {
@@ -167,23 +168,45 @@ var app = new Vue({
       if (this.newEndPoint.name == '' || this.newEndPoint.type == '' || this.newEndPoint.api == '' || this.newEndPoint.description == '') {
         ProcessMaker.alert("Please fill all the mandatory fields.", "danger");
       } else {
-        ProcessMaker.apiClient.post("ps_ethos/ps_ethos_connector", {
-          name: this.newEndPoint.name,
-          type: this.newEndPoint.type,
-          api: this.newEndPoint.api,
-          description: this.newEndPoint.description
-        }).then(function (response) {
-          ProcessMaker.alert("Endpiont successfully saved. ", "success");
-        })["catch"](function (error) {
-          if (error.response.status === 422) {
-            _this2.addError = error.response.data.errors;
-          }
-        })["finally"](function () {
-          _this2.closeModal();
+        if (this.currentEndPointId == '') {
+          ProcessMaker.apiClient.post("ps_ethos/ps_ethos_connector", {
+            name: this.newEndPoint.name,
+            type: this.newEndPoint.type,
+            api: this.newEndPoint.api,
+            description: this.newEndPoint.description
+          }).then(function (response) {
+            ProcessMaker.alert("Endpoint successfully saved. ", "success");
+          })["catch"](function (error) {
+            if (error.response.status === 422) {
+              _this2.addError = error.response.data.errors;
+            }
+          })["finally"](function () {
+            _this2.closeModal(); //this.refreshEndpoints();
 
-          _this2.refreshEndpoints(); //this.getData();
 
-        });
+            _this2.getData();
+          });
+        } else {
+          console.log("api upload");
+          ProcessMaker.apiClient.put("ps_ethos/ps_ethos_connector", {
+            id: this.currentEndPointId,
+            name: this.newEndPoint.name,
+            type: this.newEndPoint.type,
+            api: this.newEndPoint.api,
+            description: this.newEndPoint.description
+          }).then(function (response) {
+            ProcessMaker.alert("Endpoint successfully saved. ", "success");
+          })["catch"](function (error) {
+            if (error.response.status === 422) {
+              _this2.addError = error.response.data.errors;
+            }
+          })["finally"](function () {
+            _this2.closeModal(); //this.refreshEndpoints();
+
+
+            _this2.getData();
+          });
+        }
       }
     },
     deleteRow: function deleteRow(id) {
@@ -196,28 +219,58 @@ var app = new Vue({
           _this3.addError = error.response.data.errors;
         }
       })["finally"](function () {
-        _this3.refreshEndpoints(); //this.getData();
-
+        //this.refreshEndpoints();
+        _this3.getData();
       });
     },
     openModal: function openModal() {
+      var _this4 = this;
+
+      var id = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+      var endPoint = {
+        name: '',
+        type: '',
+        api: '',
+        description: ''
+      };
+      this.newEndPoint = endPoint;
+      this.currentEndPointId = id;
+
+      if (id != '') {
+        ProcessMaker.apiClient.get("ps_ethos/ps_ethos_connector/" + id, {}).then(function (response) {
+          endPoint.name = response.data.name;
+          endPoint.type = response.data.type;
+          endPoint.api = response.data.api;
+          endPoint.description = response.data.description;
+          _this4.newEndPoint = endPoint;
+        })["catch"](function (error) {
+          if (error.response.status === 422) {
+            _this4.addError = error.response.data.errors;
+          }
+        });
+      }
+
       $('#add-endpoint').modal('show');
     },
     closeModal: function closeModal() {
       $('#add-endpoint').modal('hide');
     },
     refreshEndpoints: function refreshEndpoints() {
-      var _this4 = this;
+      var _this5 = this;
 
       ProcessMaker.apiClient.get("ps_ethos/auth", {}).then(function (response) {
-        ProcessMaker.alert(response.data, "success");
+        if (response.data.split(" ").includes("ERROR:")) {
+          ProcessMaker.alert(response.data, "warning");
+        } else {
+          ProcessMaker.alert(response.data, "success");
+        }
       })["catch"](function (error) {
         if (error.response.status === 422) {
           //this.addError = error.response.data.errors;
           console.log(error.response.data.errors);
         }
       })["finally"](function () {
-        _this4.getData();
+        _this5.getData();
       });
     }
   },

@@ -40,10 +40,10 @@ class ConnectorController extends Controller
             ],
             [
                 "endpoints" => $endpointsList,
-                "description" => "PS_ethos_refresh", 
-                "description" => "Professional Services Ethos Refresh", 
-                "authtype" => "OAUTH2_BEARER", 
-                "credentials" => ["token" => $token, "verify_certificate" => false], 
+                "description" => "PS_ethos_refresh",
+                "description" => "Professional Services Ethos Refresh",
+                "authtype" => "OAUTH2_BEARER",
+                "credentials" => ["token" => $token, "verify_certificate" => false],
                 "data_source_category_id" => 1
             ]
         );
@@ -65,13 +65,13 @@ class ConnectorController extends Controller
             $ethosBaseUri = "";
         }else{
             $ethosBaseUri = $data->getValueAttribute();
-        }        
+        }
 
         if($ethosKey != "" && $ethosBaseUri != ""){
             $client = new Client([
                 'base_uri' => $ethosBaseUri
             ]);
-            
+
             try{
                 $response = $client->post('/auth', [
                     'headers' => [
@@ -79,7 +79,7 @@ class ConnectorController extends Controller
                     ],
                     'http_errors' => false
                 ]);
-                
+
                 if($response->getStatusCode() == "200"){
                     $token = $response->getBody()->getContents();
                     $connector =Datasource::updateOrCreate(
@@ -87,20 +87,20 @@ class ConnectorController extends Controller
                             "name" => "PS_ethos_connector"
                         ],
                         [
-                            "description" => "PS_ethos_connector", 
-                            "description" => "Professional Services Ethos Connector", 
-                            "authtype" => "OAUTH2_BEARER", 
-                            "credentials" => ["token" => $token, "verify_certificate" => true], 
+                            "description" => "PS_ethos_connector",
+                            "description" => "Professional Services Ethos Connector",
+                            "authtype" => "OAUTH2_BEARER",
+                            "credentials" => ["token" => $token, "verify_certificate" => false],
                             "data_source_category_id" => 1
                         ]
                     );
-                
+
                     $endpoints = Ethos::get();
                     $endpoints = $endpoints->toArray();
-            
+
                     $endpointsList = [];
                     $i = 0;
-            
+
                     foreach($endpoints as $endpoint){
                         $endpointsList[$endpoint["name"]] = [
                             "id" => $i,
@@ -120,7 +120,7 @@ class ConnectorController extends Controller
                     $connector->save();
                     return "The data connector and the endpoints have been generated successfully";
                 }else{
-                    return $response->getBody()->getContents();   
+                    return $response->getBody()->getContents();
                 }
             }catch(\GuzzleHttp\Exception\ConnectException $e){
                 return "Ethos Base URI: " . $ethosBaseUri . " - " . $e->getMessage();

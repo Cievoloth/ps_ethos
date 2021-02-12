@@ -5,6 +5,8 @@ Route::group(['middleware' => ['auth:api', 'bindings']], function() {
     Route::get('ps_ethos/auth', 'ConnectorController@generate');
 
     Route::post('ps_ethos/ps_ethos_connector/{param}', 'Ps_ethosController@delete_ps_ethos_connector');
+    Route::put('ps_ethos/ps_ethos_connector', 'Ps_ethosController@UpdatePsEthosConnector');
     Route::post('ps_ethos/ps_ethos_connector', 'Ps_ethosController@save_ps_ethos_connector');
     Route::get('ps_ethos/ps_ethos_connector', 'Ps_ethosController@list_ps_ethos_connector');
+    Route::get('ps_ethos/ps_ethos_connector/{param}', 'Ps_ethosController@GetPsEthosConnector');
 });

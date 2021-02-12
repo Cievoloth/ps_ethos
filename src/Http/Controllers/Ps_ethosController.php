@@ -81,6 +81,20 @@ class Ps_ethosController extends Controller
         }
     }
 
+    public function UpdatePsEthosConnector(Request $request){
+        $ethos_connector = PS_ethos_connector::find($request->input('id'));
+        $ethos_connector->name = $request->input('name');
+        $ethos_connector->type = $request->input('type');
+        $ethos_connector->api = $request->input('api');
+        $ethos_connector->description = $request->input('description');
+        $ethos_connector->save();
+        return $ethos_connector;
+    }
+
+    public function GetPsEthosConnector($param){
+        return PS_ethos_connector::where('id', $param)->first();
+    }
+
     public function fetch(Request $request){
         $query = Sample::query();
 

@@ -3,7 +3,7 @@
     "friendly_name": "Ps_ethos",
     "description": "Package skeleton to develop a package for ProcessMaker 4",
     "license": "AGPL-3.0-or-later",
-    "version": "0.0.2",
+    "version": "0.1.0",
     "type": "project",
     "authors": [
         {
@@ -11,8 +11,7 @@
             "email": "devops@processmaker.com"
         }
     ],
-    "require": {
-    },
+    "require": {},
     "autoload": {
         "psr-4": {
             "ProcessMaker\\Package\\Ps_ethos\\": "src"

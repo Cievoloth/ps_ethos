@@ -1,5 +1,7 @@
 @extends('layouts.layout')
 
+@section('title', 'Ethos Integration')
+
 @section('sidebar')
     @include('layouts.sidebar', ['sidebar'=> Menu::get('sidebar_admin')])
 @endsection
@@ -67,7 +69,6 @@
                                     <ul class="pagination">
                                         <li class="page-item" @click="setPage(1)"><a class="page-link" href="#"><i class="fas fa-angle-double-left"></i></a></li>
                                         <li class="page-item" @click="subtractPage()"><a class="page-link" href="#"><i class="fas fa-angle-left"></i></a></li>
-
                                         <li class="page-item" v-bind:class="{'active': page == 1}" @click="setPage(1)">
                                             <a class="page-link">1</a>
                                         </li>
@@ -100,8 +101,8 @@
                 </b-card>
             </div>
         </div>
-        <div class="modal fade" id="add-endpoint" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-            <div class="modal-dialog" role="document">
+        <div class="modal fade"  id="add-endpoint" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title bolded" id="exampleModalLabel">Add End Point</h5>
@@ -110,52 +111,79 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                        <table class="table" border="0">
-                            <tbody>
-                                <tr>
-                                    <td style="border: 0;">Name:</td>
-                                    <td style="border: 0;">
-                                        <input type="text" id="name" class="form-control " v-bind:class="{ 'is-invalid': newEndPoint.name == ''  && validate }" v-model="newEndPoint.name" />
-                                        <div class="invalid-feedback" v-if="newEndPoint.name == '' && validate">
-                                            <div>The name is required.</div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="border: 0;">Type:</td>
-                                    <td style="border: 0;">
-                                        <b-form-select
-                                            id="type"
-                                            v-model="newEndPoint.type"
-                                            :options="httpMethods"
-                                            v-bind:class="{ 'is-invalid': newEndPoint.type == ''  && validate }"
-                                            required
-                                        ></b-form-select>
-                                        <div class="invalid-feedback" v-if="newEndPoint.type == '' && validate">
-                                            <div>The type is required.</div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="border: 0;">Api:</td>
-                                    <td style="border: 0;">
-                                        <input type="text" id="api" class="form-control" v-bind:class="{ 'is-invalid': newEndPoint.api == ''  && validate }" v-model="newEndPoint.api" />
-                                        <div class="invalid-feedback" v-if="newEndPoint.api == '' && validate">
-                                            <div>The type is required.</div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="border: 0;">Description:</td>
-                                    <td style="border: 0;">
-                                        <input type="text" id="description" class="form-control" v-bind:class="{ 'is-invalid': newEndPoint.description == ''  && validate }"  v-model="newEndPoint.description" />
-                                        <div class="invalid-feedback" v-if="newEndPoint.description == '' && validate">
-                                            <div>The description is required.</div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <b-row>
+                            <b-col cols="3">Name:</b-col>
+                            <b-col cols="9">
+                                <b-form-input type="text" id="name" class="form-control " v-bind:class="{ 'is-invalid': newEndPoint.name == ''  && validate }" v-model="newEndPoint.name"></b-form-input>
+                                <div class="invalid-feedback" v-if="newEndPoint.name == '' && validate">
+                                    <div>The name is required.</div>
+                                </div>
+                            </b-col>
+                        </b-row>
+                        <br>
+                        <b-row>
+                            <b-col cols="3">Type:</b-col>
+                            <b-col cols="9">
+                                <b-form-select
+                                    id="type"
+                                    v-model="newEndPoint.type"
+                                    :options="httpMethods"
+                                    v-bind:class="{ 'is-invalid': newEndPoint.type == ''  && validate }"
+                                    class="form-control"
+                                    required
+                                ></b-form-select>
+                                <div class="invalid-feedback" v-if="newEndPoint.type == '' && validate">
+                                    <div>The type is required.</div>
+                                </div>
+                            </b-col>
+                        </b-row>
+                        <br>
+                        <b-row>
+                            <b-col cols="3">Api:</b-col>
+                            <b-col cols="9">
+                                <b-form-input type="text" id="api" class="form-control" v-bind:class="{ 'is-invalid': newEndPoint.api == ''  && validate }" v-model="newEndPoint.api"></b-form-input>
+                                <div class="invalid-feedback" v-if="newEndPoint.api == '' && validate">
+                                    <div>The API is required.</div>
+                                </div>
+                            </b-col>
+                        </b-row>
+                        <br>
+                        <b-row>
+                            <b-col cols="3">
+                                <b-form-checkbox id="add-params" v-model="addParams"> Add more params?</b-form-checkbox>
+                            </b-col>
+                            <b-col v-show="addParams" cols="9" class="text-right">
+                                <b-button size="sm" variant="primary" @click="addParam()"><i class="fa fa-plus"></i> Add</b-button>
+                            </b-col>
+                            <b-col offset="3" cols="9" v-show="addParams">
+                                <b-row>
+                                    <b-col cols="4">Params</b-col>
+                                    <b-col cols="7">Values</b-col>
+                                </b-row>
+                                <b-row v-for="(item,index) in params" style="padding-top: 10px;">
+                                    <b-col cols="4">
+                                        <b-form-input size="sm" placeholder="Param" v-model="item.key"></b-form-input>
+                                    </b-col>
+                                    <b-col cols="7">
+                                        <b-form-textarea v-model="item.value" style="font-size: 11px;" placeholder="value..." @change="formatJson(index)" rows="3"></b-form-textarea>
+                                        <b-form-checkbox v-model="item.jsonFormat" v-if="viewFlag" class="text-right" switch size="sm" @change="formatJson(index, $event)">JSON</b-form-checkbox>
+                                    </b-col>
+                                    <b-col cols="1">
+                                        <b-button size="sm" variant="danger" @click="removeParam(index)"><i class="fa fa-trash"></i></b-button>
+                                    </b-col>
+                                </b-row>
+                            </b-col>
+                        </b-row>
+                        <br>
+                        <b-row>
+                            <b-col cols="3">Description:</b-col>
+                            <b-col cols="9">
+                                <b-form-input type="text" id="description" class="form-control" v-bind:class="{ 'is-invalid': newEndPoint.description == ''  && validate }"  v-model="newEndPoint.description"></b-form-input>
+                                <div class="invalid-feedback" v-if="newEndPoint.description == '' && validate">
+                                    <div>The description is required.</div>
+                                </div>
+                            </b-col>
+                        </b-row>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-danger" @click="emptyData()" data-dismiss="modal">Cancel</button>

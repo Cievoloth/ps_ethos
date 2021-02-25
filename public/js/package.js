@@ -111,7 +111,14 @@ var app = new Vue({
       api: '',
       description: ''
     },
-    currentEndPointId: ''
+    addParams: false,
+    params: [{
+      key: '',
+      value: '',
+      jsonFormat: false
+    }],
+    currentEndPointId: '',
+    viewFlag: true
   },
   methods: {
     reload: function reload() {
@@ -153,7 +160,6 @@ var app = new Vue({
         _this.maxPage = response.data.meta.last_page;
       })["catch"](function (error) {
         if (error.response.status === 422) {
-          //this.addError = error.response.data.errors;
           console.log(error.response.data.errors);
         }
       })["finally"](function () {
@@ -168,41 +174,37 @@ var app = new Vue({
       if (this.newEndPoint.name == '' || this.newEndPoint.type == '' || this.newEndPoint.api == '' || this.newEndPoint.description == '') {
         ProcessMaker.alert("Please fill all the mandatory fields.", "danger");
       } else {
+        var body = {
+          id: this.currentEndPointId,
+          name: this.newEndPoint.name,
+          type: this.newEndPoint.type,
+          api: this.buildUrl(),
+          description: this.newEndPoint.description
+        };
+
         if (this.currentEndPointId == '') {
-          ProcessMaker.apiClient.post("ps_ethos/ps_ethos_connector", {
-            name: this.newEndPoint.name,
-            type: this.newEndPoint.type,
-            api: this.newEndPoint.api,
-            description: this.newEndPoint.description
-          }).then(function (response) {
+          //Creates a new endpoint
+          ProcessMaker.apiClient.post("ps_ethos/ps_ethos_connector", body).then(function (response) {
             ProcessMaker.alert("Endpoint successfully saved. ", "success");
           })["catch"](function (error) {
             if (error.response.status === 422) {
               _this2.addError = error.response.data.errors;
             }
           })["finally"](function () {
-            _this2.closeModal(); //this.refreshEndpoints();
-
+            _this2.closeModal();
 
             _this2.getData();
           });
         } else {
-          console.log("api upload");
-          ProcessMaker.apiClient.put("ps_ethos/ps_ethos_connector", {
-            id: this.currentEndPointId,
-            name: this.newEndPoint.name,
-            type: this.newEndPoint.type,
-            api: this.newEndPoint.api,
-            description: this.newEndPoint.description
-          }).then(function (response) {
+          //Updates the selected endpoint
+          ProcessMaker.apiClient.put("ps_ethos/ps_ethos_connector", body).then(function (response) {
             ProcessMaker.alert("Endpoint successfully saved. ", "success");
           })["catch"](function (error) {
             if (error.response.status === 422) {
               _this2.addError = error.response.data.errors;
             }
           })["finally"](function () {
-            _this2.closeModal(); //this.refreshEndpoints();
-
+            _this2.closeModal();
 
             _this2.getData();
           });
@@ -219,7 +221,6 @@ var app = new Vue({
           _this3.addError = error.response.data.errors;
         }
       })["finally"](function () {
-        //this.refreshEndpoints();
         _this3.getData();
       });
     },
@@ -235,12 +236,38 @@ var app = new Vue({
       };
       this.newEndPoint = endPoint;
       this.currentEndPointId = id;
+      this.params = [{
+        key: '',
+        value: '',
+        jsonFormat: false
+      }];
+      this.addParams = false;
+      this.validate = false;
 
       if (id != '') {
         ProcessMaker.apiClient.get("ps_ethos/ps_ethos_connector/" + id, {}).then(function (response) {
+          var fullApi = response.data.api;
+          var apiParts = fullApi.split("?");
+          var param = [];
+
+          if (apiParts.length > 1) {
+            var params = apiParts[1].split("&");
+
+            for (var i = 0; i < params.length; i++) {
+              param = params[i].split("=");
+              _this4.params[i] = {
+                key: param[0],
+                value: param[1],
+                jsonFormat: false
+              };
+            }
+
+            _this4.addParams = true;
+          }
+
           endPoint.name = response.data.name;
           endPoint.type = response.data.type;
-          endPoint.api = response.data.api;
+          endPoint.api = apiParts[0];
           endPoint.description = response.data.description;
           _this4.newEndPoint = endPoint;
         })["catch"](function (error) {
@@ -272,6 +299,82 @@ var app = new Vue({
       })["finally"](function () {
         _this5.getData();
       });
+    },
+    addParam: function addParam() {
+      this.params.push({
+        key: '',
+        value: '',
+        jsonFormat: false
+      });
+    },
+    removeParam: function removeParam(index) {
+      this.params.splice(index, 1);
+    },
+    buildUrl: function buildUrl() {
+      var api = this.newEndPoint.api;
+      var params = this.params;
+      var addParams = this.addParams;
+      var param;
+
+      if (addParams) {
+        if (params.length > 0) {
+          var complement = "";
+          var firstElementValid = false;
+
+          for (var i = 0; i < params.length; i++) {
+            if (params[i].key !== "" && params[i].value !== "") {
+              param = params[i].value;
+
+              if (this.IsValidJSONString(param)) {
+                param = JSON.stringify(JSON.parse(param));
+              }
+
+              if (!firstElementValid) {
+                complement += "?".concat(params[i].key, "=").concat(param);
+                firstElementValid = true;
+              } else {
+                complement += "&".concat(params[i].key, "=").concat(param);
+              }
+            }
+          }
+
+          return api + complement;
+        } else {
+          return api;
+        }
+      } else {
+        return api;
+      }
+    },
+    formatJson: function formatJson(index) {
+      var event = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+      this.viewFlag = false;
+      var jsonText = this.params[index].value;
+
+      if (this.IsValidJSONString(jsonText)) {
+        var jsonObject = JSON.parse(jsonText);
+
+        if (event !== undefined) {
+          this.params[index].jsonFormat = event;
+        }
+
+        if (this.params[index].jsonFormat) {
+          this.params[index].value = JSON.stringify(jsonObject, undefined, 2);
+        } else {
+          this.params[index].value = JSON.stringify(jsonObject);
+        }
+      }
+
+      this.viewFlag = true;
+    },
+    IsValidJSONString: function IsValidJSONString(str) {
+      try {
+        JSON.parse(str);
+      } catch (e) {
+        return false;
+      }
+
+      return true;
     }
   },
   beforeMount: function beforeMount() {

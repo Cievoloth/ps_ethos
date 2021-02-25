@@ -13,7 +13,16 @@ const app = new Vue({
             api: '',
             description: ''
         },
-        currentEndPointId: ''
+        addParams: false,
+        params: [
+            {
+                key: '',
+                value: '',
+                jsonFormat: false
+            }
+        ],
+        currentEndPointId: '',
+        viewFlag: true
     },
     methods: {
         reload() {
@@ -51,7 +60,6 @@ const app = new Vue({
                 })
                 .catch((error) => {
                     if (error.response.status === 422) {
-                        //this.addError = error.response.data.errors;
                         console.log(error.response.data.errors)
                     }
                 })
@@ -64,13 +72,16 @@ const app = new Vue({
             if (this.newEndPoint.name == '' || this.newEndPoint.type == '' || this.newEndPoint.api == '' || this.newEndPoint.description == '') {
                 ProcessMaker.alert("Please fill all the mandatory fields.", "danger");
             } else {
+                let body = {
+                    id: this.currentEndPointId,
+                    name: this.newEndPoint.name,
+                    type: this.newEndPoint.type,
+                    api: this.buildUrl(),
+                    description: this.newEndPoint.description
+                }
                 if (this.currentEndPointId == '') {
-                    ProcessMaker.apiClient.post("ps_ethos/ps_ethos_connector", {
-                        name: this.newEndPoint.name,
-                        type: this.newEndPoint.type,
-                        api: this.newEndPoint.api,
-                        description: this.newEndPoint.description
-                    })
+                    //Creates a new endpoint
+                    ProcessMaker.apiClient.post("ps_ethos/ps_ethos_connector", body)
                         .then((response) => {
                             ProcessMaker.alert("Endpoint successfully saved. ", "success");
                         })
@@ -81,18 +92,11 @@ const app = new Vue({
                         })
                         .finally(() => {
                             this.closeModal();
-                            //this.refreshEndpoints();
                             this.getData();
                         });
                 } else {
-                    console.log("api upload");
-                    ProcessMaker.apiClient.put("ps_ethos/ps_ethos_connector", {
-                        id: this.currentEndPointId,
-                        name: this.newEndPoint.name,
-                        type: this.newEndPoint.type,
-                        api: this.newEndPoint.api,
-                        description: this.newEndPoint.description
-                    })
+                    //Updates the selected endpoint
+                    ProcessMaker.apiClient.put("ps_ethos/ps_ethos_connector", body)
                         .then((response) => {
                             ProcessMaker.alert("Endpoint successfully saved. ", "success");
                         })
@@ -103,7 +107,6 @@ const app = new Vue({
                         })
                         .finally(() => {
                             this.closeModal();
-                            //this.refreshEndpoints();
                             this.getData();
                         });
                 }
@@ -120,7 +123,6 @@ const app = new Vue({
                     }
                 })
                 .finally(() => {
-                    //this.refreshEndpoints();
                     this.getData();
                 });
         },
@@ -133,12 +135,38 @@ const app = new Vue({
             };
             this.newEndPoint = endPoint;
             this.currentEndPointId = id;
+            this.params = [
+                {
+                    key: '',
+                    value: '',
+                    jsonFormat: false
+                }
+            ];
+            this.addParams = false;
+            this.validate = false;
             if (id != '') {
                 ProcessMaker.apiClient.get("ps_ethos/ps_ethos_connector/" + id, {})
                     .then(response => {
+                        let fullApi = response.data.api;
+                        let apiParts = fullApi.split("?");
+                        let param = [];
+
+                        if (apiParts.length > 1) {
+                            let params = apiParts[1].split("&");
+                            for (let i = 0; i < params.length; i++) {
+                                param = params[i].split("=");
+                                this.params[i] =
+                                {
+                                    key: param[0],
+                                    value: param[1],
+                                    jsonFormat: false
+                                }
+                            }
+                            this.addParams = true;
+                        }
                         endPoint.name = response.data.name;
                         endPoint.type = response.data.type;
-                        endPoint.api = response.data.api;
+                        endPoint.api = apiParts[0];
                         endPoint.description = response.data.description;
                         this.newEndPoint = endPoint;
                     })
@@ -172,9 +200,73 @@ const app = new Vue({
                 .finally(() => {
                     this.getData();
                 });
+        },
+        addParam: function () {
+            this.params.push({ key: '', value: '', jsonFormat: false });
+        },
+        removeParam: function (index) {
+            this.params.splice(index, 1);
+        },
+        buildUrl: function () {
+            let api = this.newEndPoint.api;
+            let params = this.params;
+            let addParams = this.addParams;
+            let param;
+            if (addParams) {
+                if (params.length > 0) {
+                    let complement = ``;
+                    let firstElementValid = false;
+                    for (let i = 0; i < params.length; i++) {
+                        if (params[i].key !== "" && params[i].value !== "") {
+                            param = params[i].value;
+                            if (this.IsValidJSONString(param)) {
+                                param = JSON.stringify(JSON.parse(param));
+                            }
+                            if (!firstElementValid) {
+                                complement += `?${params[i].key}=${param}`;
+                                firstElementValid = true;
+                            } else {
+                                complement += `&${params[i].key}=${param}`;
+                            }
+                        }
+                    }
+                    return api + complement;
+                } else {
+                    return api;
+                }
+            } else {
+                return api;
+            }
+        },
+        formatJson: function (index, event = undefined) {
+            this.viewFlag = false;
+            let jsonText = this.params[index].value;
+
+            if (this.IsValidJSONString(jsonText)) {
+                let jsonObject = JSON.parse(jsonText);
+
+                if (event !== undefined) {
+                    this.params[index].jsonFormat = event;
+                }
+
+                if (this.params[index].jsonFormat) {
+                    this.params[index].value = JSON.stringify(jsonObject, undefined, 2);
+                } else {
+                    this.params[index].value = JSON.stringify(jsonObject);
+                }
+            }
+            this.viewFlag = true;
+        },
+        IsValidJSONString: function (str) {
+            try {
+                JSON.parse(str);
+            } catch (e) {
+                return false;
+            }
+            return true;
         }
     },
     beforeMount: function () {
         this.getData();
-    },
+    }
 })

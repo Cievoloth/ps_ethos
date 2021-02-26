@@ -38,11 +38,11 @@
                     </div>
                     <table class="table table-striped table-bordered mt-3">
                         <thead class="thead-secondary">
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>API</th>
-                            <th>Description</th>
-                            <th>Actions</th>
+                            <th style="width: 10%">Name</th>
+                            <th style="width: 10%">Type</th>
+                            <th style="width: 50%">API</th>
+                            <th style="width: 10%">Description</th>
+                            <th style="width: 20%">Actions</th>
                         </thead>
                         <tbody>
                             <tr v-for="(endPoint, index) in endPoints">
@@ -102,7 +102,7 @@
             </div>
         </div>
         <div class="modal fade"  id="add-endpoint" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-            <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-dialog modal-xl" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title bolded" id="exampleModalLabel">Add End Point</h5>
@@ -112,8 +112,8 @@
                     </div>
                     <div class="modal-body">
                         <b-row>
-                            <b-col cols="3">Name:</b-col>
-                            <b-col cols="9">
+                            <b-col offset="1" cols="2">Name:</b-col>
+                            <b-col cols="8">
                                 <b-form-input type="text" id="name" class="form-control " v-bind:class="{ 'is-invalid': newEndPoint.name == ''  && validate }" v-model="newEndPoint.name"></b-form-input>
                                 <div class="invalid-feedback" v-if="newEndPoint.name == '' && validate">
                                     <div>The name is required.</div>
@@ -122,8 +122,8 @@
                         </b-row>
                         <br>
                         <b-row>
-                            <b-col cols="3">Type:</b-col>
-                            <b-col cols="9">
+                            <b-col offset="1" cols="2">Type:</b-col>
+                            <b-col cols="8">
                                 <b-form-select
                                     id="type"
                                     v-model="newEndPoint.type"
@@ -139,8 +139,8 @@
                         </b-row>
                         <br>
                         <b-row>
-                            <b-col cols="3">Api:</b-col>
-                            <b-col cols="9">
+                            <b-col offset="1" cols="2">Api:</b-col>
+                            <b-col cols="8">
                                 <b-form-input type="text" id="api" class="form-control" v-bind:class="{ 'is-invalid': newEndPoint.api == ''  && validate }" v-model="newEndPoint.api"></b-form-input>
                                 <div class="invalid-feedback" v-if="newEndPoint.api == '' && validate">
                                     <div>The API is required.</div>
@@ -149,13 +149,13 @@
                         </b-row>
                         <br>
                         <b-row>
-                            <b-col cols="3">
+                            <b-col offset="1" cols="2">
                                 <b-form-checkbox id="add-params" v-model="addParams"> Add more params?</b-form-checkbox>
                             </b-col>
-                            <b-col v-show="addParams" cols="9" class="text-right">
+                            <b-col v-show="addParams" cols="8" class="text-right">
                                 <b-button size="sm" variant="primary" @click="addParam()"><i class="fa fa-plus"></i> Add</b-button>
                             </b-col>
-                            <b-col offset="3" cols="9" v-show="addParams">
+                            <b-col offset="3" cols="8" v-show="addParams">
                                 <b-row>
                                     <b-col cols="4">Params</b-col>
                                     <b-col cols="7">Values</b-col>
@@ -168,7 +168,7 @@
                                         <b-form-textarea v-model="item.value" style="font-size: 11px;" placeholder="value..." @change="formatJson(index)" rows="3"></b-form-textarea>
                                         <b-form-checkbox v-model="item.jsonFormat" v-if="viewFlag" class="text-right" switch size="sm" @change="formatJson(index, $event)">JSON</b-form-checkbox>
                                     </b-col>
-                                    <b-col cols="1">
+                                    <b-col cols="1" class="text-center">
                                         <b-button size="sm" variant="danger" @click="removeParam(index)"><i class="fa fa-trash"></i></b-button>
                                     </b-col>
                                 </b-row>
@@ -176,8 +176,8 @@
                         </b-row>
                         <br>
                         <b-row>
-                            <b-col cols="3">Description:</b-col>
-                            <b-col cols="9">
+                            <b-col offset="1" cols="2">Description:</b-col>
+                            <b-col cols="8">
                                 <b-form-input type="text" id="description" class="form-control" v-bind:class="{ 'is-invalid': newEndPoint.description == ''  && validate }"  v-model="newEndPoint.description"></b-form-input>
                                 <div class="invalid-feedback" v-if="newEndPoint.description == '' && validate">
                                     <div>The description is required.</div>

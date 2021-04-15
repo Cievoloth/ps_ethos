@@ -29,7 +29,7 @@ class Ps_ethosController extends Controller
         return view('ps_ethos::index');
     }*/
 
-    public function list_ps_ethos_connector(Request $request) {
+    public function ListPsEthosConnector(Request $request) {
         $query = PS_ethos_connector::query();
 
         $filter = $request->input('filter', '');
@@ -58,12 +58,12 @@ class Ps_ethosController extends Controller
         return new ApiCollection($response);
     }
 
-    public function delete_ps_ethos_connector($param) {
+    public function DeletePsEthosConnector($param) {
         PS_ethos_connector::where('id', $param)->delete();
         return response([], 204);
     }
 
-    public function save_ps_ethos_connector(Request $request) {
+    public function SavePsEthosConnector(Request $request) {
         $name = $request->input('name', '');
         $type = $request->input('type', '');
         $api = $request->input('api', '');
@@ -116,30 +116,6 @@ class Ps_ethosController extends Controller
             )->paginate($request->input('per_page', 10));
 
         return new ApiCollection($response);
-    }
-
-    public function store(Request $request){
-        $sample = new Sample();
-        $sample->fill($request->json()->all());
-        $sample->saveOrFail();
-        return $sample;
-    }
-
-    public function update(Request $request, $license_generator){
-        Sample::where('id', $license_generator)->update([
-            'name' => $request->get("name"),
-            'status' => $request->get("status")
-            ]);
-        return response([], 204);
-    }
-
-    public function destroy($license_generator){
-        Sample::find($license_generator)->delete();
-        return response([], 204);
-    }
-
-    public function generate($license_generator){
-
     }
 
     public function test($param){

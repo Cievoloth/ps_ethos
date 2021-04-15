@@ -1,12 +1,10 @@
 <?php
 Route::group(['middleware' => ['auth:api', 'bindings']], function() {
-    Route::get('admin/ps_ethos/fetch', 'Ps_ethosController@fetch')->name('package.skeleton.fetch');
-    Route::apiResource('admin/ps_ethos', 'Ps_ethosController');
     Route::get('ps_ethos/auth', 'ConnectorController@generate');
-
-    Route::post('ps_ethos/ps_ethos_connector/{param}', 'Ps_ethosController@delete_ps_ethos_connector');
-    Route::put('ps_ethos/ps_ethos_connector', 'Ps_ethosController@UpdatePsEthosConnector');
-    Route::post('ps_ethos/ps_ethos_connector', 'Ps_ethosController@save_ps_ethos_connector');
-    Route::get('ps_ethos/ps_ethos_connector', 'Ps_ethosController@list_ps_ethos_connector');
+    Route::get('ps_ethos/ps_ethos_connector', 'Ps_ethosController@ListPsEthosConnector');
     Route::get('ps_ethos/ps_ethos_connector/{param}', 'Ps_ethosController@GetPsEthosConnector');
+    Route::put('ps_ethos/ps_ethos_connector', 'Ps_ethosController@UpdatePsEthosConnector');
+    Route::post('ps_ethos/ps_ethos_connector/{param}', 'Ps_ethosController@DeletePsEthosConnector');
+    Route::post('ps_ethos/ps_ethos_connector', 'Ps_ethosController@SavePsEthosConnector');
+    Route::get('ps_ethos/call/{endpoint}', 'ConnectorController@call');
 });

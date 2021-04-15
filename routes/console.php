@@ -6,7 +6,7 @@ use ProcessMaker\Models\EnvironmentVariable;
 use ProcessMaker\GenerateAccessToken;
 use ProcessMaker\Models\User;
 
-Artisan::command('ps_ethos:install', function () { 
+Artisan::command('ps_ethos:install', function () {
     if (!Schema::hasTable('ps_ethos_connectors')) {
         Schema::create('ps_ethos_connectors', function (Illuminate\Database\Schema\Blueprint $table) {
             $table->increments('id');
@@ -18,12 +18,12 @@ Artisan::command('ps_ethos:install', function () {
             $table->softDeletes();
         });
     }
-    
+
     Artisan::call('vendor:publish', [
         '--tag' => 'ps_ethos',
         '--force' => true
     ]);
-    
+
     EnvironmentVariable::firstOrCreate(
         ["name" => "Ethos_Key"],
         ["description" => "Ethos Key", "value" => ""]
@@ -34,37 +34,12 @@ Artisan::command('ps_ethos:install', function () {
         ["description" => "Ethos Base Uri", "value" => ""]
     );
 
-    //Refresh token data-conector
-    $user = User::where('is_administrator', 1)->first();
-    $token = new GenerateAccessToken($user);
-
-    $token = $token->getToken();
-
-    $endpointsList["auth"] = [
-        "id" => 0,
-        "url" => url('/api/1.0/ps_ethos/auth'),
-        "body" => null,
-        "view" => false,
-        "method" => "GET",
-        "headers" => [],
-        "purpose" => "auth",
-        "testData" => "{}",
-        "description" => "Refresh the tokens of the ps_ethos connectors"
-    ];
-
-    $connector =Datasource::updateOrCreate(
-        [
-            "name" => "PS_ethos_refresh"
-        ],
-        [
-            "endpoints" => $endpointsList,
-            "description" => "PS_ethos_refresh", 
-            "description" => "Professional Services Ethos Refresh", 
-            "authtype" => "OAUTH2_BEARER", 
-            "credentials" => ["token" => $token, "verify_certificate" => false], 
-            "data_source_category_id" => 1
-        ]
+    EnvironmentVariable::firstOrCreate(
+        ["name" => "Ethos_Bearer_Token"],
+        ["description" => "Ethos Bearer Token", "value" => ""]
     );
+
+    Datasource::where('name', 'PS_ethos_refresh')->delete();
 
     $this->info('Ps_ethos has been installed');
 })->describe('Installs the required js files and table in DB');

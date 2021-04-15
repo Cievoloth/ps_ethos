@@ -20,7 +20,7 @@ class ConnectorController extends Controller
         $user = User::where('is_administrator', 1)->first();
         $token = new GenerateAccessToken($user);
 
-        $token = $token::getToken();
+        $token = 0;
 
         $endpointsList["auth"] = [
             "id" => 0,
@@ -52,6 +52,142 @@ class ConnectorController extends Controller
     }
 
     public function generate(){
+
+        $user = User::where('is_administrator', 1)->first();
+        $token = new GenerateAccessToken($user);
+        $token = $token->getToken();
+
+        $connector =Datasource::updateOrCreate(
+            [
+                "name" => "PS_ethos_connector"
+            ],
+            [
+                "description" => "PS_ethos_connector",
+                "description" => "Professional Services Ethos Connector",
+                "authtype" => "OAUTH2_BEARER",
+                "credentials" => ["token" => $token, "verify_certificate" => false],
+                "data_source_category_id" => 1
+            ]
+        );
+
+        $endpoints = Ethos::get();
+        $endpoints = $endpoints->toArray();
+
+        $endpointsList = [];
+        $i = 0;
+
+        foreach($endpoints as $endpoint){
+            $apiParts = explode("?", $endpoint["api"]);
+            if (isset($apiParts[1])){
+                $url = url("api/1.0/ps_ethos/call/" . $endpoint["id"]) . "?" . $apiParts[1];
+            }else{
+                $url = url("api/1.0/ps_ethos/call/" . $endpoint["id"]);
+            }
+            $endpointsList[$endpoint["name"]] = [
+                "id" => $i,
+                "url" => $url,
+                "body" => null,
+                "view" => false,
+                "method" => $endpoint["type"],
+                "headers" => [],
+                "purpose" => $endpoint["name"],
+                "testData" => "{}",
+                "description" => $endpoint["description"]
+            ];
+            $i++;
+        }
+        $connectors = DataSource::get();
+        $connector->endpoints = $endpointsList;
+        $connector->save();
+        return "The data connector and the endpoints have been generated successfully";
+    }
+
+    public function call(Request $request, $param){
+        $fullUrl = urldecode($request->fullUrl());
+        $urlArray = explode("?", $fullUrl);
+
+        $endpoint = Ethos::where('id', $param)->first();
+
+        if(isset($urlArray[1])){
+            $savedApi = $endpoint->api;
+            $savedApiArray = explode("?", $savedApi);
+
+            if(isset($savedApiArray[1])){
+                $endpoint->api = $savedApiArray[0] . "?" . $urlArray[1];
+            }
+        }
+
+        $response = $this->EthosApiCall($endpoint);
+
+        if($response !== 0){
+            if($response->getStatusCode() == "401"){
+                $this->setEthosToken();
+                $response = $this->EthosApiCall($endpoint);
+            }
+
+            if($response->getStatusCode() == "200"){
+                return $response->getBody()->getContents();
+            }else{
+                return $response->getStatusCode();
+            }
+        }else{
+            return "ERROR: Set the Environment Variables (Ethos_Key and the Ethos_Base_Uri) First";
+        }
+    }
+
+    private function EthosApiCall($endpoint){
+        $data = EnvironmentVariable::where("name", "Ethos_Base_Uri")->first();
+        if($data->getOriginal('value') == ""){
+            $ethosBaseUri = "";
+        }else{
+            $ethosBaseUri = $data->getValueAttribute();
+        }
+
+        $data = EnvironmentVariable::where("name", "Ethos_Bearer_Token")->first();
+        if($data->getOriginal('value') == ""){
+            $ethosKey = "";
+        }else{
+            $ethosKey = $data->getValueAttribute();
+        }
+
+        if($ethosKey != "" && $ethosBaseUri != ""){
+            $client = new Client([
+                'base_uri' => $ethosBaseUri
+            ]);
+            switch ($endpoint->type) {
+                case 'GET':
+                    $response = $client->get($endpoint->api, [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $ethosKey,
+                        ],
+                        'http_errors' => false
+                    ]);
+                    break;
+
+                case 'POST':
+                    $response = $client->post($endpoint->api, [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $ethosKey,
+                        ],
+                        'http_errors' => false
+                    ]);
+                    break;
+            }
+
+            return $response;
+        }else{
+            return 0;
+        }
+    }
+
+    private function setEthosToken(){
+        $data = EnvironmentVariable::where("name", "Ethos_Base_Uri")->first();
+        if($data->getOriginal('value') == ""){
+            $ethosBaseUri = "";
+        }else{
+            $ethosBaseUri = $data->getValueAttribute();
+        }
+
         $data = EnvironmentVariable::where("name", "Ethos_Key")->first();
         if($data->getOriginal('value') == ""){
             $ethosKey = "";
@@ -59,84 +195,40 @@ class ConnectorController extends Controller
             $ethosKey = $data->getValueAttribute();
         }
 
-        $data = EnvironmentVariable::where("name", "Ethos_Base_Uri")->first();
-
-        if($data->getOriginal('value') == ""){
-            $ethosBaseUri = "";
-        }else{
-            $ethosBaseUri = $data->getValueAttribute();
-        }
-
         if($ethosKey != "" && $ethosBaseUri != ""){
             $client = new Client([
                 'base_uri' => $ethosBaseUri
             ]);
+            $response = $client->post('/auth', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $ethosKey,
+                ],
+                'http_errors' => false
+            ]);
 
-            try{
-                $response = $client->post('/auth', [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $ethosKey,
-                    ],
-                    'http_errors' => false
-                ]);
-
-                if($response->getStatusCode() == "200"){
-                    $token = $response->getBody()->getContents();
-                    $connector =Datasource::updateOrCreate(
-                        [
-                            "name" => "PS_ethos_connector"
-                        ],
-                        [
-                            "description" => "PS_ethos_connector",
-                            "description" => "Professional Services Ethos Connector",
-                            "authtype" => "OAUTH2_BEARER",
-                            "credentials" => ["token" => $token, "verify_certificate" => false],
-                            "data_source_category_id" => 1
-                        ]
-                    );
-
-                    $endpoints = Ethos::get();
-                    $endpoints = $endpoints->toArray();
-
-                    $endpointsList = [];
-                    $i = 0;
-
-                    foreach($endpoints as $endpoint){
-                        $endpointsList[$endpoint["name"]] = [
-                            "id" => $i,
-                            "url" => "https://integrate.elluciancloud.com" . $endpoint["api"],
-                            "body" => null,
-                            "view" => false,
-                            "method" => $endpoint["type"],
-                            "headers" => [],
-                            "purpose" => $endpoint["name"],
-                            "testData" => "{}",
-                            "description" => $endpoint["description"]
-                        ];
-                        $i++;
-                    }
-                    $connectors = DataSource::get();
-                    $connector->endpoints = $endpointsList;
-                    $connector->save();
-                    return "The data connector and the endpoints have been generated successfully";
-                }else{
-                    return $response->getBody()->getContents();
-                }
-            }catch(\GuzzleHttp\Exception\ConnectException $e){
-                return "Ethos Base URI: " . $ethosBaseUri . " - " . $e->getMessage();
+            if($response->getStatusCode() == "200"){
+                $token = $response->getBody()->getContents();
+            }else{
+                $token = 0;
             }
+
+            $item = EnvironmentVariable::where("name", "Ethos_Bearer_Token")->first();
+            $item->value = $token;
+            $item->save();
+
+            return $token;
         }else{
             return "ERROR: Set the Environment Variables (Ethos_Key and the Ethos_Base_Uri) First";
         }
-
     }
 
     public function test(){
-        $data = Ethos::where('name', 'persons');
+        /*$data = Ethos::where('name', 'persons');
         if($data->count() > 0){
             $data->delete();
         }
-        dd("test");
+        dd("test");*/
+        echo url("/api");
     }
 
 }

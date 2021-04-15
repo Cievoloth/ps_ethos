@@ -105,6 +105,8 @@ class ConnectorController extends Controller
     public function call(Request $request, $param){
         $fullUrl = urldecode($request->fullUrl());
         $urlArray = explode("?", $fullUrl);
+        return response()->json(["data" => $urlArray, "meta" => []]);
+
 
         $endpoint = Ethos::where('id', $param)->first();
 
@@ -121,17 +123,21 @@ class ConnectorController extends Controller
 
         if($response !== 0){
             if($response->getStatusCode() == "401"){
-                $this->setEthosToken();
-                $response = $this->EthosApiCall($endpoint);
+                $flag = $this->setEthosToken();
+                if($flag !== 0){
+                    $response = $this->EthosApiCall($endpoint);
+                }else{
+                    return response()->json(["data" => ["message" => "ERROR: Set the Environment Variables (Ethos_Key and the Ethos_Base_Uri) First"], "meta" => []]);
+                }
             }
 
             if($response->getStatusCode() == "200"){
-                return $response->getBody()->getContents();
+                return response()->json(["data" => json_decode($response->getBody()->getContents()), "meta" => []]);
             }else{
-                return $response->getStatusCode();
+                return response()->json(["data" => ["status" => $response->getStatusCode()], "meta" => []]);
             }
         }else{
-            return "ERROR: Set the Environment Variables (Ethos_Key and the Ethos_Base_Uri) First";
+            return response()->json(["data" => ["message" => "Something went wrong"], "meta" => []]);
         }
     }
 
@@ -218,17 +224,12 @@ class ConnectorController extends Controller
 
             return $token;
         }else{
-            return "ERROR: Set the Environment Variables (Ethos_Key and the Ethos_Base_Uri) First";
+            return 0;
         }
     }
 
     public function test(){
-        /*$data = Ethos::where('name', 'persons');
-        if($data->count() > 0){
-            $data->delete();
-        }
-        dd("test");*/
-        echo url("/api");
+        return $this->setEthosToken();
     }
 
 }

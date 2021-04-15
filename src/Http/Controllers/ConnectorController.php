@@ -105,8 +105,6 @@ class ConnectorController extends Controller
     public function call(Request $request, $param){
         $fullUrl = urldecode($request->fullUrl());
         $urlArray = explode("?", $fullUrl);
-        return response()->json(["data" => $urlArray, "meta" => []]);
-
 
         $endpoint = Ethos::where('id', $param)->first();
 

@@ -132,7 +132,7 @@ class ConnectorController extends Controller
             if($response->getStatusCode() == "200"){
                 return response()->json(["data" => json_decode($response->getBody()->getContents()), "meta" => []]);
             }else{
-                return response()->json(["data" => ["status" => $response->getStatusCode()], "meta" => []]);
+                return response()->json(["data" => ["status" => $response->getStatusCode(), "text" => $response->getBody()->getContents()], "meta" => []]);
             }
         }else{
             return response()->json(["data" => ["message" => "Something went wrong"], "meta" => []]);
@@ -163,6 +163,8 @@ class ConnectorController extends Controller
                     $response = $client->get($endpoint->api, [
                         'headers' => [
                             'Authorization' => 'Bearer ' . $ethosKey,
+                            'Accept' => 'application/json',
+                            'Content-Type' => 'application/json'
                         ],
                         'http_errors' => false
                     ]);

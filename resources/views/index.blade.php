@@ -13,92 +13,116 @@
         <p class="lead">
         <div class="row">
             <div class="col-12">
-                <b-card header="secondary" header-bg-variant="secondary" border-variant="secondary" header-text-variant="white" align="center" header-tag="header" footer-tag="footer" >
-                    <template #header>
-                        <h5 class="text-center font-weight-bold">{{__('ETHOS BANNER')}}</h5>
-                    </template>
-                    <div class="d-flex flex-column flex-md-row">
-                        <div class="flex-grow-1">
-                            <div id="search" class="mb-3 mb-md-0">
-                                <div class="input-group w-100">
-                                    <input placeholder="Search" class="form-control" v-model="search">
-                                    <div class="input-group-append">
-                                        <b-button type="button" data-original-title="Search" size="sm" class="btn btn-info" @click="getData()">
-                                            <i class="fas fa-search"></i> Search
-                                        </b-button>
+                <b-tabs content-class="mt-3">
+                    <b-tab title="Banner Ethos" active>
+                        <b-card header-text-variant="white" align="center" footer-tag="footer" style="margin-top: -18px;">
+                            <div class="d-flex flex-column flex-md-row">
+                                <div class="flex-grow-1">
+                                    <div id="search" class="mb-3 mb-md-0">
+                                        <div class="input-group w-100">
+                                            <input placeholder="Search" class="form-control" v-model="search">
+                                            <div class="input-group-append">
+                                                <b-button type="button" data-original-title="Search" size="sm" class="btn btn-info" @click="getData()">
+                                                    <i class="fas fa-search"></i> Search
+                                                </b-button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex ml-md-2 flex-column flex-md-row">
+                                    <b-button type="button" class="btn btn-success" size="sm" @click="openModal()">
+                                        <i class="fas fa-plus"></i> End Point
+                                    </b-button>
+                                </div>
+                            </div>
+                            <table class="table table-striped table-bordered mt-3">
+                                <thead class="thead-secondary">
+                                    <th style="width: 10%">Name</th>
+                                    <th style="width: 10%">Type</th>
+                                    <th style="width: 50%">API</th>
+                                    <th style="width: 10%">Description</th>
+                                    <th style="width: 20%">Actions</th>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(endPoint, index) in endPoints">
+                                        <td>@{{ endPoint["name"] }}</td>
+                                        <td>@{{ endPoint["type"] }}</td>
+                                        <td>@{{ endPoint["api"] }}</td>
+                                        <td>@{{ endPoint["description"] }}</td>
+                                        <td>
+                                            <b-button-group size="sm">
+                                                <b-button class="btn btn-info" @click="openModal(endPoint['id'])"><span class="fas fa-edit"></span> Edit</b-button>
+                                                <b-button class="btn btn-danger" @click="deleteRow(endPoint['id'])"><span class="fas fa-trash"></span> Remove</b-button>
+                                            </b-button-group>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <template #footer>
+                                <div class="row">
+                                    <div class="col-md-6 col-sm-12 d-flex align-items-start flex-column">
+                                        <b-button class="btn btn-info" @click="refreshEndpoints()" size="sm"><span class="fas fa-sync-alt"></span> Regenerate</b-button>
+                                    </div>
+                                    <div class="col-md-6 col-sm-12 d-flex align-items-end flex-column button-pagination">
+                                        <nav aria-label="Page navigation">
+                                            <ul class="pagination">
+                                                <li class="page-item" @click="setPage(1)"><a class="page-link" href="#"><i class="fas fa-angle-double-left"></i></a></li>
+                                                <li class="page-item" @click="subtractPage()"><a class="page-link" href="#"><i class="fas fa-angle-left"></i></a></li>
+                                                <li class="page-item" v-bind:class="{'active': page == 1}" @click="setPage(1)">
+                                                    <a class="page-link">1</a>
+                                                </li>
+                                                <li class="page-item" v-if="page > 3">
+                                                    <a class="page-link">...</a>
+                                                </li>
+                                                <li class="page-item" v-if="page > 2" @click="setPage(page - 1)">
+                                                    <a class="page-link">@{{ page - 1 }}</a>
+                                                </li>
+                                                <li class="page-item" v-if="page > 1 && page < maxPage" v-bind:class="{'active': page > 1 && page < maxPage}">
+                                                    <a class="page-link">@{{ page }}</a>
+                                                </li>
+                                                <li class="page-item" v-if="page < (maxPage - 1)" @click="setPage(page + 1)">
+                                                    <a class="page-link">@{{ page + 1 }}</a>
+                                                </li>
+                                                <li class="page-item" v-if="page < (maxPage - 2)">
+                                                    <a class="page-link">...</a>
+                                                </li>
+                                                <li class="page-item" v-if="maxPage > 1" v-bind:class="{'active': page == maxPage}" @click="setPage(maxPage)">
+                                                    <a class="page-link">@{{ maxPage }}</a>
+                                                </li>
+                                                <li class="page-item" @click="addPage()"><a class="page-link" href="#"><i class="fas fa-angle-right"></i></a></li>
+                                                <li class="page-item" @click="setPage(maxPage)"><a class="page-link" href="#"><i class="fas fa-angle-double-right"></i></a></li>
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </template>
+                        </b-card>
+                    </b-tab>
+                    <b-tab title="Configuration">
+                        <b-card header-text-variant="white" footer-tag="footer" style="margin-top: -18px;">
+                            <div class="row">
+                                <div class="col-md-6 col-sm-12">
+                                    <div>
+                                        <label for="config-uri">Base URI:</label>
+                                        <b-form-input id="config-uri" v-model="config.uri" placeholder="Enter your name"></b-form-input>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-sm-12">
+                                    <div>
+                                        <label for="config-uri">Ethos Key:</label>
+                                        <b-form-input id="config-uri" v-model="config.uri" placeholder="Enter your name"></b-form-input>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="d-flex ml-md-2 flex-column flex-md-row">
-                            <b-button type="button" class="btn btn-success" size="sm" @click="openModal()">
-                                <i class="fas fa-plus"></i> End Point
-                            </b-button>
-                        </div>
-                    </div>
-                    <table class="table table-striped table-bordered mt-3">
-                        <thead class="thead-secondary">
-                            <th style="width: 10%">Name</th>
-                            <th style="width: 10%">Type</th>
-                            <th style="width: 50%">API</th>
-                            <th style="width: 10%">Description</th>
-                            <th style="width: 20%">Actions</th>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(endPoint, index) in endPoints">
-                                <td>@{{ endPoint["name"] }}</td>
-                                <td>@{{ endPoint["type"] }}</td>
-                                <td>@{{ endPoint["api"] }}</td>
-                                <td>@{{ endPoint["description"] }}</td>
-                                <td>
-                                    <b-button-group size="sm">
-                                        <b-button class="btn btn-info" @click="openModal(endPoint['id'])"><span class="fas fa-edit"></span> Edit</b-button>
-                                        <b-button class="btn btn-danger" @click="deleteRow(endPoint['id'])"><span class="fas fa-trash"></span> Remove</b-button>
-                                    </b-button-group>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <template #footer>
-                        <div class="row">
-                            <div class="col-md-6 col-sm-12 d-flex align-items-start flex-column">
-                                <b-button class="btn btn-info" @click="refreshEndpoints()" size="sm"><span class="fas fa-sync-alt"></span> Regenerate</b-button>
+                            <br>
+                            <div class="row">
+                                <div class="col-sm-12" align="right">
+                                    <b-button variant="info"><i class="fa fa-save"></i> Save</b-button>
+                                </div>
                             </div>
-                            <div class="col-md-6 col-sm-12 d-flex align-items-end flex-column button-pagination">
-                                <nav aria-label="Page navigation">
-                                    <ul class="pagination">
-                                        <li class="page-item" @click="setPage(1)"><a class="page-link" href="#"><i class="fas fa-angle-double-left"></i></a></li>
-                                        <li class="page-item" @click="subtractPage()"><a class="page-link" href="#"><i class="fas fa-angle-left"></i></a></li>
-                                        <li class="page-item" v-bind:class="{'active': page == 1}" @click="setPage(1)">
-                                            <a class="page-link">1</a>
-                                        </li>
-                                        <li class="page-item" v-if="page > 3">
-                                            <a class="page-link">...</a>
-                                        </li>
-                                        <li class="page-item" v-if="page > 2" @click="setPage(page - 1)">
-                                            <a class="page-link">@{{ page - 1 }}</a>
-                                        </li>
-                                        <li class="page-item" v-if="page > 1 && page < maxPage" v-bind:class="{'active': page > 1 && page < maxPage}">
-                                            <a class="page-link">@{{ page }}</a>
-                                        </li>
-                                        <li class="page-item" v-if="page < (maxPage - 1)" @click="setPage(page + 1)">
-                                            <a class="page-link">@{{ page + 1 }}</a>
-                                        </li>
-                                        <li class="page-item" v-if="page < (maxPage - 2)">
-                                            <a class="page-link">...</a>
-                                        </li>
-                                        <li class="page-item" v-if="maxPage > 1" v-bind:class="{'active': page == maxPage}" @click="setPage(maxPage)">
-                                            <a class="page-link">@{{ maxPage }}</a>
-                                        </li>
-
-                                        <li class="page-item" @click="addPage()"><a class="page-link" href="#"><i class="fas fa-angle-right"></i></a></li>
-                                        <li class="page-item" @click="setPage(maxPage)"><a class="page-link" href="#"><i class="fas fa-angle-double-right"></i></a></li>
-                                    </ul>
-                                </nav>
-                            </div>
-                        </div>
-                    </template>
-                </b-card>
+                        </b-card>
+                    </b-tab>
+                </b-tabs>
             </div>
         </div>
         <div class="modal fade"  id="add-endpoint" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
@@ -193,8 +217,9 @@
             </div>
         </div>
     </div>
+@endsection
+
 @section('js')
 <script src="{{mix('/js/package.js', 'vendor/processmaker/packages/ps_ethos')}}"></script>
 
-@endsection
 @endsection

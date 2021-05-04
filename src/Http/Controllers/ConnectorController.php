@@ -118,7 +118,7 @@ class ConnectorController extends Controller
         }
 
         $response = $this->EthosApiCall($endpoint);
-
+        return $response;
         if($response !== 0){
             if($response->getStatusCode() == "401"){
                 $flag = $this->setEthosToken();
@@ -132,7 +132,7 @@ class ConnectorController extends Controller
             if($response->getStatusCode() == "200"){
                 return response()->json(["data" => json_decode($response->getBody()->getContents()), "meta" => []]);
             }else{
-                return response()->json(["data" => ["status" => $response->getStatusCode()], "meta" => []]);
+                return response()->json(["data" => ["status" => $response->getStatusCode(), "message" => json_decode($response->getBody()->getContents())], "meta" => []]);
             }
         }else{
             return response()->json(["data" => ["message" => "Something went wrong"], "meta" => []]);
@@ -166,6 +166,7 @@ class ConnectorController extends Controller
                         ],
                         'http_errors' => false
                     ]);
+
                     break;
 
                 case 'POST':
@@ -226,8 +227,36 @@ class ConnectorController extends Controller
         }
     }
 
+    public function ConfigUpdate(Request $request){
+        $ethosToken = $request->input('ethos_token');
+        $item = EnvironmentVariable::where("name", "Ethos_Key")->first();
+        $item->value = $ethosToken;
+        $item->save();
+
+        $baseUri = $request->input('base_uri');
+        $item = EnvironmentVariable::where("name", "Ethos_Base_Uri")->first();
+        $item->value = $baseUri;
+        $item->save();
+
+        return 0;
+    }
+
     public function test(){
-        return $this->setEthosToken();
+        //return
+        //$this->setEthosToken();
+
+        $client = new Client([
+            'base_uri' => 'https://integrate.elluciancloud.com'
+        ]);
+
+        $response = $client->get("/api/persons", [
+            'headers' => [
+                'Authorization' => 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiOTUyYWE3OC03YWQ5LTQyOGItYjIxMy03MzI5Njg0NDcwMjkiLCJ0b2ciOltdLCJ0ZW5hbnQiOnsiaWQiOiIxYmJjZDNjZS1mZjAzLTRmYTktOWFjYy1hZDJkNTU2YjgxNTYiLCJhY2NvdW50SWQiOiIwMDFHMDAwMDAwaUhtc29JQUMiLCJhbGlhcyI6ImR1Mjc1OTcxdGVzdCIsIm5hbWUiOiJEcmFrZSBVbml2ZXJzaXR5IiwibGFiZWwiOiJUZXN0In0sImlhdCI6MTYyMDA5MDIzNiwiZXhwIjoxNjIwMDkwNTM2fQ.hFNDwcWFNeqGUYLRkNuAZBZZe6uoorlS3JoP9cauW0w',
+            ],
+            'http_errors' => false
+        ]);
+
+        dd($response->getBody()->getContents());
     }
 
 }

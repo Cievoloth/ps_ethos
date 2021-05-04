@@ -22,7 +22,10 @@ const app = new Vue({
             }
         ],
         currentEndPointId: '',
-        viewFlag: true
+        viewFlag: true,
+        config: {
+            uri: ''
+        }
     },
     methods: {
         reload() {

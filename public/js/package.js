@@ -118,7 +118,10 @@ var app = new Vue({
       jsonFormat: false
     }],
     currentEndPointId: '',
-    viewFlag: true
+    viewFlag: true,
+    config: {
+      uri: ''
+    }
   },
   methods: {
     reload: function reload() {

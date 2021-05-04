@@ -163,6 +163,8 @@ class ConnectorController extends Controller
                     $response = $client->get($endpoint->api, [
                         'headers' => [
                             'Authorization' => 'Bearer ' . $ethosKey,
+                            'Accept' => 'application/json',
+                            'Content-Type' => 'application/json'
                         ],
                         'http_errors' => false
                     ]);

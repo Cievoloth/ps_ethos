@@ -120,7 +120,8 @@ var app = new Vue({
     currentEndPointId: '',
     viewFlag: true,
     config: {
-      uri: ''
+      uri: '',
+      ethosToken: ''
     }
   },
   methods: {
@@ -169,8 +170,20 @@ var app = new Vue({
         _this.emptyData();
       });
     },
-    add: function add() {
+    getConfig: function getConfig() {
       var _this2 = this;
+
+      ProcessMaker.apiClient.get("ps_ethos/get-config", {}).then(function (response) {
+        _this2.config.uri = response.data.uri;
+        _this2.config.ethosToken = response.data.ethosKey;
+      })["catch"](function (error) {
+        if (error.response.status === 422) {
+          console.log(error.response.data.errors);
+        }
+      });
+    },
+    add: function add() {
+      var _this3 = this;
 
       this.validate = true;
 
@@ -191,12 +204,13 @@ var app = new Vue({
             ProcessMaker.alert("Endpoint successfully saved. ", "success");
           })["catch"](function (error) {
             if (error.response.status === 422) {
-              _this2.addError = error.response.data.errors;
+              //this.addError = error.response.data.errors;
+              console.log(error.response.data.errors);
             }
           })["finally"](function () {
-            _this2.closeModal();
+            _this3.closeModal();
 
-            _this2.getData();
+            _this3.getData();
           });
         } else {
           //Updates the selected endpoint
@@ -204,31 +218,33 @@ var app = new Vue({
             ProcessMaker.alert("Endpoint successfully saved. ", "success");
           })["catch"](function (error) {
             if (error.response.status === 422) {
-              _this2.addError = error.response.data.errors;
+              //this.addError = error.response.data.errors;
+              console.log(error.response.data.errors);
             }
           })["finally"](function () {
-            _this2.closeModal();
+            _this3.closeModal();
 
-            _this2.getData();
+            _this3.getData();
           });
         }
       }
     },
     deleteRow: function deleteRow(id) {
-      var _this3 = this;
+      var _this4 = this;
 
       ProcessMaker.apiClient.post("ps_ethos/ps_ethos_connector/" + id, {}).then(function (response) {
-        ProcessMaker.alert("End point successfully deleted ", "success");
+        ProcessMaker.alert("Endpoint successfully deleted ", "success");
       })["catch"](function (error) {
         if (error.response.status === 422) {
-          _this3.addError = error.response.data.errors;
+          //this.addError = error.response.data.errors;
+          console.log(error.response.data.errors);
         }
       })["finally"](function () {
-        _this3.getData();
+        _this4.getData();
       });
     },
     openModal: function openModal() {
-      var _this4 = this;
+      var _this5 = this;
 
       var id = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       var endPoint = {
@@ -258,24 +274,25 @@ var app = new Vue({
 
             for (var i = 0; i < params.length; i++) {
               param = params[i].split("=");
-              _this4.params[i] = {
+              _this5.params[i] = {
                 key: param[0],
                 value: param[1],
                 jsonFormat: false
               };
             }
 
-            _this4.addParams = true;
+            _this5.addParams = true;
           }
 
           endPoint.name = response.data.name;
           endPoint.type = response.data.type;
           endPoint.api = apiParts[0];
           endPoint.description = response.data.description;
-          _this4.newEndPoint = endPoint;
+          _this5.newEndPoint = endPoint;
         })["catch"](function (error) {
           if (error.response.status === 422) {
-            _this4.addError = error.response.data.errors;
+            //this.addError = error.response.data.errors;
+            console.log(error.response.data.errors);
           }
         });
       }
@@ -286,7 +303,7 @@ var app = new Vue({
       $('#add-endpoint').modal('hide');
     },
     refreshEndpoints: function refreshEndpoints() {
-      var _this5 = this;
+      var _this6 = this;
 
       ProcessMaker.apiClient.get("ps_ethos/auth", {}).then(function (response) {
         if (response.data.split(" ").includes("ERROR:")) {
@@ -300,7 +317,7 @@ var app = new Vue({
           console.log(error.response.data.errors);
         }
       })["finally"](function () {
-        _this5.getData();
+        _this6.getData();
       });
     },
     addParam: function addParam() {
@@ -378,10 +395,28 @@ var app = new Vue({
       }
 
       return true;
+    },
+    saveConfig: function saveConfig() {
+      var _this7 = this;
+
+      ProcessMaker.apiClient.put("ps_ethos/config-update", {
+        base_uri: this.config.uri,
+        ethos_token: this.config.ethosToken
+      }).then(function (response) {
+        ProcessMaker.alert("The configuration has been updated", "success");
+      })["catch"](function (error) {
+        if (error.response.status === 422) {
+          //this.addError = error.response.data.errors;
+          console.log(error.response.data.errors);
+        }
+      })["finally"](function () {
+        _this7.getData();
+      });
     }
   },
   beforeMount: function beforeMount() {
     this.getData();
+    this.getConfig();
   }
 });
 

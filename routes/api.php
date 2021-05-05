@@ -8,4 +8,5 @@ Route::group(['middleware' => ['auth:api', 'bindings']], function() {
     Route::post('ps_ethos/ps_ethos_connector', 'Ps_ethosController@SavePsEthosConnector');
     Route::get('ps_ethos/call/{endpoint}', 'ConnectorController@call');
     Route::put('ps_ethos/config-update', 'ConnectorController@ConfigUpdate');
+    Route::get('ps_ethos/get-config', 'ConnectorController@GetConfig');
 });

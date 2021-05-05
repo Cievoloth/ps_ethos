@@ -118,7 +118,7 @@ class ConnectorController extends Controller
         }
 
         $response = $this->EthosApiCall($endpoint);
-        return $response;
+
         if($response !== 0){
             if($response->getStatusCode() == "401"){
                 $flag = $this->setEthosToken();
@@ -175,6 +175,8 @@ class ConnectorController extends Controller
                     $response = $client->post($endpoint->api, [
                         'headers' => [
                             'Authorization' => 'Bearer ' . $ethosKey,
+                            'Accept' => 'application/json',
+                            'Content-Type' => 'application/json'
                         ],
                         'http_errors' => false
                     ]);
@@ -243,22 +245,15 @@ class ConnectorController extends Controller
         return 0;
     }
 
+    public function GetConfig(){
+        $ethosToken = EnvironmentVariable::where("name", "Ethos_Key")->first();
+        $baseUri = EnvironmentVariable::where("name", "Ethos_Base_Uri")->first();
+
+        return response()->json(["uri" => $baseUri->value, "ethosKey" => $ethosToken->value]);
+    }
+
     public function test(){
-        //return
-        //$this->setEthosToken();
-
-        $client = new Client([
-            'base_uri' => 'https://integrate.elluciancloud.com'
-        ]);
-
-        $response = $client->get("/api/persons", [
-            'headers' => [
-                'Authorization' => 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiOTUyYWE3OC03YWQ5LTQyOGItYjIxMy03MzI5Njg0NDcwMjkiLCJ0b2ciOltdLCJ0ZW5hbnQiOnsiaWQiOiIxYmJjZDNjZS1mZjAzLTRmYTktOWFjYy1hZDJkNTU2YjgxNTYiLCJhY2NvdW50SWQiOiIwMDFHMDAwMDAwaUhtc29JQUMiLCJhbGlhcyI6ImR1Mjc1OTcxdGVzdCIsIm5hbWUiOiJEcmFrZSBVbml2ZXJzaXR5IiwibGFiZWwiOiJUZXN0In0sImlhdCI6MTYyMDA5MDIzNiwiZXhwIjoxNjIwMDkwNTM2fQ.hFNDwcWFNeqGUYLRkNuAZBZZe6uoorlS3JoP9cauW0w',
-            ],
-            'http_errors' => false
-        ]);
-
-        dd($response->getBody()->getContents());
+        return $this->setEthosToken();
     }
 
 }

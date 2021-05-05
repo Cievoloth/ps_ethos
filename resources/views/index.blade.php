@@ -104,20 +104,20 @@
                                 <div class="col-md-6 col-sm-12">
                                     <div>
                                         <label for="config-uri">Base URI:</label>
-                                        <b-form-input id="config-uri" v-model="config.uri" placeholder="Enter your name"></b-form-input>
+                                        <b-form-input id="config-uri" v-model="config.uri" placeholder="Enter the ethos base URI"></b-form-input>
                                     </div>
                                 </div>
                                 <div class="col-md-6 col-sm-12">
                                     <div>
                                         <label for="config-uri">Ethos Key:</label>
-                                        <b-form-input id="config-uri" v-model="config.uri" placeholder="Enter your name"></b-form-input>
+                                        <b-form-input id="config-uri" v-model="config.ethosToken" placeholder="Enter the ethos key" type="password"></b-form-input>
                                     </div>
                                 </div>
                             </div>
                             <br>
                             <div class="row">
                                 <div class="col-sm-12" align="right">
-                                    <b-button variant="info"><i class="fa fa-save"></i> Save</b-button>
+                                    <b-button variant="info" @click="saveConfig()"><i class="fa fa-save" ></i> Save</b-button>
                                 </div>
                             </div>
                         </b-card>

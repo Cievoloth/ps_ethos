@@ -24,7 +24,8 @@ const app = new Vue({
         currentEndPointId: '',
         viewFlag: true,
         config: {
-            uri: ''
+            uri: '',
+            ethosToken: ''
         }
     },
     methods: {
@@ -70,6 +71,18 @@ const app = new Vue({
                     this.emptyData();
                 });
         },
+        getConfig: function () {
+            ProcessMaker.apiClient.get("ps_ethos/get-config", {})
+                .then((response) => {
+                    this.config.uri = response.data.uri;
+                    this.config.ethosToken = response.data.ethosKey;
+                })
+                .catch((error) => {
+                    if (error.response.status === 422) {
+                        console.log(error.response.data.errors)
+                    }
+                });
+        },
         add: function () {
             this.validate = true;
             if (this.newEndPoint.name == '' || this.newEndPoint.type == '' || this.newEndPoint.api == '' || this.newEndPoint.description == '') {
@@ -90,7 +103,8 @@ const app = new Vue({
                         })
                         .catch((error) => {
                             if (error.response.status === 422) {
-                                this.addError = error.response.data.errors;
+                                //this.addError = error.response.data.errors;
+                                console.log(error.response.data.errors);
                             }
                         })
                         .finally(() => {
@@ -105,7 +119,8 @@ const app = new Vue({
                         })
                         .catch((error) => {
                             if (error.response.status === 422) {
-                                this.addError = error.response.data.errors;
+                                //this.addError = error.response.data.errors;
+                                console.log(error.response.data.errors);
                             }
                         })
                         .finally(() => {
@@ -118,11 +133,12 @@ const app = new Vue({
         deleteRow: function (id) {
             ProcessMaker.apiClient.post("ps_ethos/ps_ethos_connector/" + id, {})
                 .then((response) => {
-                    ProcessMaker.alert("End point successfully deleted ", "success");
+                    ProcessMaker.alert("Endpoint successfully deleted ", "success");
                 })
                 .catch((error) => {
                     if (error.response.status === 422) {
-                        this.addError = error.response.data.errors;
+                        //this.addError = error.response.data.errors;
+                        console.log(error.response.data.errors);
                     }
                 })
                 .finally(() => {
@@ -175,7 +191,8 @@ const app = new Vue({
                     })
                     .catch(error => {
                         if (error.response.status === 422) {
-                            this.addError = error.response.data.errors;
+                            //this.addError = error.response.data.errors;
+                            console.log(error.response.data.errors);
                         }
                     });
             }
@@ -267,9 +284,28 @@ const app = new Vue({
                 return false;
             }
             return true;
+        },
+        saveConfig: function () {
+            ProcessMaker.apiClient.put("ps_ethos/config-update", {
+                base_uri: this.config.uri,
+                ethos_token: this.config.ethosToken
+            })
+                .then((response) => {
+                    ProcessMaker.alert("The configuration has been updated", "success");
+                })
+                .catch((error) => {
+                    if (error.response.status === 422) {
+                        //this.addError = error.response.data.errors;
+                        console.log(error.response.data.errors);
+                    }
+                })
+                .finally(() => {
+                    this.getData();
+                });
         }
     },
     beforeMount: function () {
         this.getData();
+        this.getConfig();
     }
 })

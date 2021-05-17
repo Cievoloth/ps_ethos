@@ -12,6 +12,7 @@ use ProcessMaker\Packages\Connectors\DataSources\Models\DataSource as DataSource
 use ProcessMaker\Models\EnvironmentVariable;
 use ProcessMaker\GenerateAccessToken;
 use ProcessMaker\Models\User;
+use ProcessMaker\Plugins\Collections\Models\Collection;
 
 class ConnectorController extends Controller
 {
@@ -252,8 +253,73 @@ class ConnectorController extends Controller
         return response()->json(["uri" => $baseUri->value, "ethosKey" => $ethosToken->value]);
     }
 
-    public function test(){
-        return $this->setEthosToken();
+    public function syncRecords($collection, Request $request){
+        $collection = Collection::where('id',2)->first();
+        $collection->records->truncate();
+
+        $api = $request->input('api');
+        $limit = $request->input('limit');
+
+        if(str_contains($api, '?')){
+            $url = $api . "&limit=" . $limit;
+        }else{
+            $url = $api . "?limit=" . $limit;
+        }
+
+        $baseUri = EnvironmentVariable::where("name", "Ethos_Base_Uri")->first();
+
+        $token = $this->setEthosToken();
+        $client = new Client([
+            'base_uri' => $baseUri->value
+        ]);
+
+        $response = $client->get($url, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json'
+            ],
+            'http_errors' => false
+        ]);
+
+        $items = json_decode($response->getBody()->getCOntents());
+
+        foreach($items as $item){
+            $record = $collection->createRecord([
+                'data' => $item,
+            ]);
+        }
+
+        return $items;
+    }
+
+    public function test($collection){
+        dd(Collection::where('id',2)->first());
+        //$collection->records->truncate();
+
+        /*$token = $this->setEthosToken();
+        $client = new Client([
+            'base_uri' => 'https://integrate.elluciancloud.com'
+        ]);
+<
+        $response = $client->get('/api/academic-periods?limit=10', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json'
+            ],
+            'http_errors' => false
+        ]);
+
+        $items = json_decode($response->getBody()->getCOntents());
+
+        foreach($items as $item){
+            $record = $collection->createRecord([
+                'data' => $item,
+            ]);
+        }
+
+        return $items;*/
     }
 
 }

@@ -3,7 +3,7 @@
     "friendly_name": "Ps_ethos",
     "description": "Package skeleton to develop a package for ProcessMaker 4",
     "license": "AGPL-3.0-or-later",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "type": "project",
     "authors": [
         {

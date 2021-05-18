@@ -254,16 +254,20 @@ class ConnectorController extends Controller
     }
 
     public function syncRecords($collection, Request $request){
-        $collection = Collection::where('id',2)->first();
+        $collection = Collection::where('id',$collection)->first();
         $collection->records->truncate();
 
         $api = $request->input('api');
-        $limit = $request->input('limit');
 
-        if(str_contains($api, '?')){
-            $url = $api . "&limit=" . $limit;
+        if($request->has('limit')){
+            $limit = $request->input("limit");
+            if(str_contains($api, '?')){
+                $url = $api . "&limit=" . $limit;
+            }else{
+                $url = $api . "?limit=" . $limit;
+            }
         }else{
-            $url = $api . "?limit=" . $limit;
+            $url = $api;
         }
 
         $baseUri = EnvironmentVariable::where("name", "Ethos_Base_Uri")->first();
@@ -294,7 +298,7 @@ class ConnectorController extends Controller
     }
 
     public function test($collection){
-        dd(Collection::where('id',2)->first());
+        dd(Collection::where('id',$collection)->first());
         //$collection->records->truncate();
 
         /*$token = $this->setEthosToken();

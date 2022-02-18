@@ -1,6 +1,6 @@
 {
   "name": "ps_ethos",
-  "version": "0.0.1",
+  "version": "0.2.5",
   "description": "Package skeleton to start a develop in ProcessMaker 4",
   "author": "DevOps <devops@processmaker.com>",
   "license": "ISC",

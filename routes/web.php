@@ -1,8 +1,6 @@
 <?php
 
 Route::group(['middleware' => ['auth']], function () {
-    Route::view('admin/ps_ethos', 'ps_ethos::index')->name('package.ethos.index');
-    Route::get('getConnector/{param}', 'ConnectorController@index');
-    Route::get('test/{collection}', 'ConnectorController@test');
+    Route::get('admin/ps_ethos', 'EthosController@index')->name('package.ethos.index');
     Route::get('ps_ethos/refresh', 'ConnectorController@setEthosToken');
 });

@@ -1,39 +1,25 @@
 <?php
+
 namespace ProcessMaker\Package\Ps_ethos\Http\Controllers;
 
 use ProcessMaker\Http\Controllers\Controller;
 use ProcessMaker\Http\Resources\ApiCollection;
 use ProcessMaker\Package\Ps_ethos\Models\PS_ethos_connector;
-use ProcessMaker\Models\User;
-use ProcessMaker\Package\SavedSearch\Models\SavedSearch;
-use RBAC;
 use Illuminate\Http\Request;
-use URL;
 
-
-class Ps_ethosController extends Controller
+class EthosController extends Controller
 {
-    /*public function index(){
-        $query = PS_ethos_connector::get();
-
-        $i = 0;
-        $ps_ethos = [];
-        foreach($query as $ethos_connector){
-            $ps_ethos[$i] = $ethos_connector;
-            $i++;
-        }
-        $ps_ethos = collect($ps_ethos);
-        $json_ethos = json_encode($ps_ethos);
-
-        //return view('ps_ethos::index', compact('ps_ethos', 'json_ethos'));
+    public function index()
+    {
         return view('ps_ethos::index');
-    }*/
+    }
 
-    public function ListPsEthosConnector(Request $request) {
+    public function listPsEthosConnector(Request $request)
+    {
         $query = PS_ethos_connector::query();
 
         $filter = $request->input('filter', '');
-        //return $filter;
+
         $currentPage = $request->input('page', 1);
         if (!empty($filter)) {
             $filter = '%' . $filter . '%';
@@ -58,19 +44,21 @@ class Ps_ethosController extends Controller
         return new ApiCollection($response);
     }
 
-    public function DeletePsEthosConnector($param) {
+    public function deletePsEthosConnector($param)
+    {
         PS_ethos_connector::where('id', $param)->delete();
         return response([], 204);
     }
 
-    public function SavePsEthosConnector(Request $request) {
+    public function savePsEthosConnector(Request $request)
+    {
         $name = $request->input('name', '');
         $type = $request->input('type', '');
         $api = $request->input('api', '');
         $description = $request->input('description', '');
         if (empty($name) || empty($type) || empty($api)) {
             return response(["Name, type or API are empty values"], 400);
-        }  else {
+        } else {
             $ethos_connector = new PS_ethos_connector();
             $ethos_connector->name = $name;
             $ethos_connector->type = $type;
@@ -81,7 +69,8 @@ class Ps_ethosController extends Controller
         }
     }
 
-    public function UpdatePsEthosConnector(Request $request){
+    public function updatePsEthosConnector(Request $request)
+    {
         $ethos_connector = PS_ethos_connector::find($request->input('id'));
         $ethos_connector->name = $request->input('name');
         $ethos_connector->type = $request->input('type');
@@ -91,11 +80,13 @@ class Ps_ethosController extends Controller
         return $ethos_connector;
     }
 
-    public function GetPsEthosConnector($param){
+    public function getPsEthosConnector($param)
+    {
         return PS_ethos_connector::where('id', $param)->first();
     }
 
-    public function fetch(Request $request){
+    public function fetch(Request $request)
+    {
         $query = Sample::query();
 
         $filter = $request->input('filter', '');
@@ -116,9 +107,5 @@ class Ps_ethosController extends Controller
             )->paginate($request->input('per_page', 10));
 
         return new ApiCollection($response);
-    }
-
-    public function test($param){
-        return $param;
     }
 }

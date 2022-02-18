@@ -1,13 +1,11 @@
 <?php
+
 namespace ProcessMaker\Package\Ps_ethos\Http\Controllers;
 
 use ProcessMaker\Http\Controllers\Controller;
-use ProcessMaker\Http\Resources\ApiCollection;
 use ProcessMaker\Package\Ps_ethos\Models\PS_ethos_connector as Ethos;
 use GuzzleHttp\Client;
-use RBAC;
 use Illuminate\Http\Request;
-use URL;
 use ProcessMaker\Packages\Connectors\DataSources\Models\DataSource as DataSource;
 use ProcessMaker\Models\EnvironmentVariable;
 use ProcessMaker\GenerateAccessToken;
@@ -16,49 +14,56 @@ use ProcessMaker\Plugins\Collections\Models\Collection;
 
 class ConnectorController extends Controller
 {
-    public function index($param){
-        //Refresh token data-conector
-        $user = User::where('is_administrator', 1)->first();
-        $token = new GenerateAccessToken($user);
+    public function setEthosToken()
+    {
+        $data = EnvironmentVariable::where("name", "Ethos_Base_Uri")->first();
+        if ($data->getOriginal('value') == "") {
+            $ethosBaseUri = "";
+        } else {
+            $ethosBaseUri = $data->getValueAttribute();
+        }
 
-        $token = 0;
+        $data = EnvironmentVariable::where("name", "Ethos_Key")->first();
+        if ($data->getOriginal('value') == "") {
+            $ethosKey = "";
+        } else {
+            $ethosKey = $data->getValueAttribute();
+        }
 
-        $endpointsList["auth"] = [
-            "id" => 0,
-            "url" => url('/api/1.0/ps_ethos/auth'),
-            "body" => null,
-            "view" => false,
-            "method" => "GET",
-            "headers" => [],
-            "purpose" => "auth",
-            "testData" => "{}",
-            "description" => "Refresh the tokens of the ps_ethos connectors"
-        ];
+        if ($ethosKey != "" && $ethosBaseUri != "") {
+            $client = new Client([
+                'base_uri' => $ethosBaseUri
+            ]);
+            $response = $client->post('/auth', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $ethosKey,
+                ],
+                'http_errors' => false
+            ]);
 
-        $connector =Datasource::updateOrCreate(
-            [
-                "name" => "PS_ethos_refresh"
-            ],
-            [
-                "endpoints" => $endpointsList,
-                "description" => "PS_ethos_refresh",
-                "description" => "Professional Services Ethos Refresh",
-                "authtype" => "OAUTH2_BEARER",
-                "credentials" => ["token" => $token, "verify_certificate" => false],
-                "data_source_category_id" => 1
-            ]
-        );
+            if ($response->getStatusCode() == "200") {
+                $token = $response->getBody()->getContents();
+            } else {
+                $token = 0;
+            }
 
-        return 0;
+            $item = EnvironmentVariable::where("name", "Ethos_Bearer_Token")->first();
+            $item->value = $token;
+            $item->save();
+
+            return $token;
+        } else {
+            return 0;
+        }
     }
 
-    public function generate(){
-
+    public function generateDataConnector()
+    {
         $user = User::where('is_administrator', 1)->first();
         $token = new GenerateAccessToken($user);
         $token = $token->getToken();
 
-        $connector =Datasource::updateOrCreate(
+        $connector = DataSource::updateOrCreate(
             [
                 "name" => "PS_ethos_connector"
             ],
@@ -77,11 +82,11 @@ class ConnectorController extends Controller
         $endpointsList = [];
         $i = 0;
 
-        foreach($endpoints as $endpoint){
+        foreach ($endpoints as $endpoint) {
             $apiParts = explode("?", $endpoint["api"]);
-            if (isset($apiParts[1])){
+            if (isset($apiParts[1])) {
                 $url = url("api/1.0/ps_ethos/call/" . $endpoint["id"]) . "?" . $apiParts[1];
-            }else{
+            } else {
                 $url = url("api/1.0/ps_ethos/call/" . $endpoint["id"]);
             }
             $endpointsList[$endpoint["name"]] = [
@@ -97,71 +102,109 @@ class ConnectorController extends Controller
             ];
             $i++;
         }
-        $connectors = DataSource::get();
+
         $connector->endpoints = $endpointsList;
         $connector->save();
         return "The data connector and the endpoints have been generated successfully";
     }
 
-    public function call(Request $request, $param){
+    public function call(Request $request, $param)
+    {
         $fullUrl = urldecode($request->fullUrl());
         $urlArray = explode("?", $fullUrl);
 
         $endpoint = Ethos::where('id', $param)->first();
 
-        if(isset($urlArray[1])){
+        if (isset($urlArray[1])) {
             $savedApi = $endpoint->api;
             $savedApiArray = explode("?", $savedApi);
 
-            if(isset($savedApiArray[1])){
+            if (isset($savedApiArray[1])) {
                 $endpoint->api = $savedApiArray[0] . "?" . $urlArray[1];
             }
         }
+        $this->setEthosToken();
+        $response = $this->ethosApiCall($endpoint);
 
-        $response = $this->EthosApiCall($endpoint);
+        if ($response !== 0) {
+            $clientType = env('ETHOS_CLIENT', 'GUZZLE');
 
-        if($response !== 0){
-            if($response->getStatusCode() == "401"){
-                $flag = $this->setEthosToken();
-                if($flag !== 0){
-                    $response = $this->EthosApiCall($endpoint);
-                }else{
-                    return response()->json(["data" => ["message" => "ERROR: Set the Environment Variables (Ethos_Key and the Ethos_Base_Uri) First"], "meta" => []]);
+            if ($clientType === "GUZZLE") {
+                if ($response->getStatusCode() == "200") {
+                    return response()->json([
+                        "data" => json_decode($response->getBody()->getContents()),
+                        "meta" => []
+                    ]);
+                } else {
+                    return response()->json([
+                        "data" => [
+                            "status" => $response->getStatusCode(),
+                            "message" => json_decode($response->getBody()->getContents())
+                        ],
+                        "meta" => []
+                    ]);
                 }
             }
 
-            if($response->getStatusCode() == "200"){
-                return response()->json(["data" => json_decode($response->getBody()->getContents()), "meta" => []]);
-            }else{
-                return response()->json(["data" => ["status" => $response->getStatusCode(), "message" => json_decode($response->getBody()->getContents())], "meta" => []]);
+            if ($clientType === "CURL") {
+                if ($response['status'] === 200) {
+                    return response()->json([
+                        "data" => json_decode($response['response']),
+                        "meta" => []
+                    ]);
+                } else {
+                    return response()->json([
+                        "data" => [
+                            "status" => $response['status'],
+                            "message" => json_decode($response['response'])
+                        ],
+                        "meta" => []
+                    ]);
+                }
             }
-        }else{
-            return response()->json(["data" => ["message" => "Something went wrong"], "meta" => []]);
+
+            return response()->json([
+                "data" => [
+                    "message" => "Something went wrong"
+                ],
+                "meta" => []
+            ]);
+        } else {
+            return response()->json([
+                "data" => [
+                    "message" => "Something went wrong"
+                ],
+                "meta" => []
+            ]);
         }
     }
 
-    private function EthosApiCall($endpoint){
+    private function ethosApiCall($endpoint)
+    {
+        $clientType = env('ETHOS_CLIENT', 'GUZZLE');
+
         $data = EnvironmentVariable::where("name", "Ethos_Base_Uri")->first();
-        if($data->getOriginal('value') == ""){
+        if ($data->getOriginal('value') == "") {
             $ethosBaseUri = "";
-        }else{
+        } else {
             $ethosBaseUri = $data->getValueAttribute();
         }
 
         $data = EnvironmentVariable::where("name", "Ethos_Bearer_Token")->first();
-        if($data->getOriginal('value') == ""){
+        if ($data->getOriginal('value') == "") {
             $ethosKey = "";
-        }else{
+        } else {
             $ethosKey = $data->getValueAttribute();
         }
 
-        if($ethosKey != "" && $ethosBaseUri != ""){
-            $client = new Client([
-                'base_uri' => $ethosBaseUri
-            ]);
-            switch ($endpoint->type) {
-                case 'GET':
-                    $response = $client->get($endpoint->api, [
+        if ($ethosKey != "" && $ethosBaseUri != "") {
+            // Using Guzzle Client
+            if ($clientType === "GUZZLE") {
+                try {
+                    $client = new Client([
+                        'base_uri' => $ethosBaseUri
+                    ]);
+                    $response = $client->request($endpoint->type, $endpoint->api, [
                         'headers' => [
                             'Authorization' => 'Bearer ' . $ethosKey,
                             'Accept' => 'application/json',
@@ -169,70 +212,47 @@ class ConnectorController extends Controller
                         ],
                         'http_errors' => false
                     ]);
-
-                    break;
-
-                case 'POST':
-                    $response = $client->post($endpoint->api, [
-                        'headers' => [
-                            'Authorization' => 'Bearer ' . $ethosKey,
-                            'Accept' => 'application/json',
-                            'Content-Type' => 'application/json'
-                        ],
-                        'http_errors' => false
-                    ]);
-                    break;
+                    return $response;
+                } catch (\GuzzleHttp\Exception\RequestException $e) {
+                    return $e;
+                }
             }
 
-            return $response;
-        }else{
+            // Using cURL Client
+            if ($clientType === "CURL") {
+                $curl = curl_init();
+
+                curl_setopt_array($curl, array(
+                    CURLOPT_URL => $ethosBaseUri . $endpoint->api,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_ENCODING => '',
+                    CURLOPT_MAXREDIRS => 10,
+                    CURLOPT_TIMEOUT => 0,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                    CURLOPT_CUSTOMREQUEST => $endpoint->type,
+                    CURLOPT_HTTPHEADER => array(
+                        'Content-Type: application/json',
+                        'Authorization: Bearer ' . $ethosKey
+                    ),
+                ));
+
+                $response = curl_exec($curl);
+                $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+                curl_close($curl);
+
+                return ['status' => $httpCode, 'response' => $response];
+            }
+
+            return 0;
+        } else {
             return 0;
         }
     }
 
-    private function setEthosToken(){
-        $data = EnvironmentVariable::where("name", "Ethos_Base_Uri")->first();
-        if($data->getOriginal('value') == ""){
-            $ethosBaseUri = "";
-        }else{
-            $ethosBaseUri = $data->getValueAttribute();
-        }
-
-        $data = EnvironmentVariable::where("name", "Ethos_Key")->first();
-        if($data->getOriginal('value') == ""){
-            $ethosKey = "";
-        }else{
-            $ethosKey = $data->getValueAttribute();
-        }
-
-        if($ethosKey != "" && $ethosBaseUri != ""){
-            $client = new Client([
-                'base_uri' => $ethosBaseUri
-            ]);
-            $response = $client->post('/auth', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $ethosKey,
-                ],
-                'http_errors' => false
-            ]);
-
-            if($response->getStatusCode() == "200"){
-                $token = $response->getBody()->getContents();
-            }else{
-                $token = 0;
-            }
-
-            $item = EnvironmentVariable::where("name", "Ethos_Bearer_Token")->first();
-            $item->value = $token;
-            $item->save();
-
-            return $token;
-        }else{
-            return 0;
-        }
-    }
-
-    public function ConfigUpdate(Request $request){
+    public function configUpdate(Request $request)
+    {
         $ethosToken = $request->input('ethos_token');
         $item = EnvironmentVariable::where("name", "Ethos_Key")->first();
         $item->value = $ethosToken;
@@ -246,27 +266,29 @@ class ConnectorController extends Controller
         return 0;
     }
 
-    public function GetConfig(){
+    public function getConfig()
+    {
         $ethosToken = EnvironmentVariable::where("name", "Ethos_Key")->first();
         $baseUri = EnvironmentVariable::where("name", "Ethos_Base_Uri")->first();
 
         return response()->json(["uri" => $baseUri->value, "ethosKey" => $ethosToken->value]);
     }
 
-    public function syncRecords($collection, Request $request){
-        $collection = Collection::where('id',$collection)->first();
+    public function syncRecords($collection, Request $request)
+    {
+        $collection = Collection::where('id', $collection)->first();
         $collection->records->truncate();
 
         $api = $request->input('api');
 
-        if($request->has('limit')){
+        if ($request->has('limit')) {
             $limit = $request->input("limit");
-            if(str_contains($api, '?')){
+            if (str_contains($api, '?')) {
                 $url = $api . "&limit=" . $limit;
-            }else{
+            } else {
                 $url = $api . "?limit=" . $limit;
             }
-        }else{
+        } else {
             $url = $api;
         }
 
@@ -288,7 +310,7 @@ class ConnectorController extends Controller
 
         $items = json_decode($response->getBody()->getCOntents());
 
-        foreach($items as $item){
+        foreach ($items as $item) {
             $record = $collection->createRecord([
                 'data' => $item,
             ]);
@@ -296,34 +318,4 @@ class ConnectorController extends Controller
 
         return $items;
     }
-
-    public function test($collection){
-        dd(Collection::where('id',$collection)->first());
-        //$collection->records->truncate();
-
-        /*$token = $this->setEthosToken();
-        $client = new Client([
-            'base_uri' => 'https://integrate.elluciancloud.com'
-        ]);
-<
-        $response = $client->get('/api/academic-periods?limit=10', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $token,
-                'Accept' => 'application/json',
-                'Content-Type' => 'application/json'
-            ],
-            'http_errors' => false
-        ]);
-
-        $items = json_decode($response->getBody()->getCOntents());
-
-        foreach($items as $item){
-            $record = $collection->createRecord([
-                'data' => $item,
-            ]);
-        }
-
-        return $items;*/
-    }
-
 }

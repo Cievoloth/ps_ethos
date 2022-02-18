@@ -11,7 +11,6 @@
             "email": "devops@processmaker.com"
         }
     ],
-    "require": {},
     "autoload": {
         "psr-4": {
             "ProcessMaker\\Package\\Ps_ethos\\": "src"
@@ -28,5 +27,8 @@
         "post-create-project-cmd": [
             "@php rename-project.php"
         ]
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^3.6"
     }
 }
